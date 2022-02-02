@@ -1,4 +1,4 @@
-# Serverless S3 Lambda Notification
+# Serverless S3 Lambda Notification with SQS
 
 This project is an example depicting that shows the communication between S3 -> SQS -> Lambda
 The the lambda gets triggered on every new object added to S3. An SQS has been configured in the middle to further imporve the scalability
