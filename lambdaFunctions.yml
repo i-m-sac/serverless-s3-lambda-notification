@@ -1,0 +1,29 @@
+testLambda:
+  handler: resolvers/index.testLambda
+  name: ${opt:stage}-testLambda
+  description: Lambda function test
+  runtime: nodejs14.x
+  timeout: 300
+  maximumRetryAttempts: 0
+  environment: 
+    STAGE: ${opt:stage}
+    S3_BUCKET: !Ref TestBucket
+
+receiveFromSQS:
+  handler: resolvers/index.receiveFromSQS
+  name: ${opt:stage}-receiveFromSQS
+  description: Lambda function to receive from SQS
+  runtime: nodejs14.x
+  timeout: 30
+  maximumRetryAttempts: 0
+  reservedConcurrency: 1
+  events:
+    - sqs:
+        batchSize: 1
+        arn:
+          Fn::GetAtt:
+            - ImageProcessingQ
+            - Arn
+  environment: 
+    STAGE: ${opt:stage}
+    SQS: !Ref ImageProcessingQ

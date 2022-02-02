@@ -1,0 +1,12 @@
+service: sandbox
+provider:
+  name: aws
+  region: ${file(./serverless.env.yml):${opt:stage}.AWS_REGION}
+  role: AWSLambdaExecutionRole
+  versionFunctions: false
+  tracing:
+    lambda: true
+functions:
+    - ${file(./lambdaFunctions.yml)}
+resources:
+    - ${file(./resources.yml)}

@@ -1,0 +1,86 @@
+Resources:
+  TestBucket:
+    Type: AWS::S3::Bucket
+    DependsOn : ImageProcessingQueuePolicy
+    Properties:
+      BucketName: ${file(./serverless.env.yml):${opt:stage}.BUCKET_NAME}
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: s3:ObjectCreated:*
+            Queue: 
+              Fn::GetAtt:
+                - ImageProcessingQ
+                - Arn
+  AWSLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AWSLambdaExecutionRole-${opt:stage}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: S3Access-${opt:stage}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "s3:PutObject"
+                Effect: Allow
+                Resource:
+                  - !Join ['', ['arn:aws:s3:::', !Ref 'TestBucket', '/*']]
+        - PolicyName: SQSAccess-${opt:stage}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "sqs:*"
+                Effect: Allow
+                Resource:
+                  - "arn:aws:sqs:${file(./serverless.env.yml):${opt:stage}.AWS_REGION}:${file(./serverless.env.yml):${opt:stage}.AWS_ACCOUNT_ID}:ImageProcessingQ"
+                  - "arn:aws:sqs:${file(./serverless.env.yml):${opt:stage}.AWS_REGION}:${file(./serverless.env.yml):${opt:stage}.AWS_ACCOUNT_ID}:ImageProcessingDeadLetterQ"
+        - PolicyName: CloudWatchLogsAccess-${opt:stage}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource:
+                  - "arn:aws:logs:${file(./serverless.env.yml):${opt:stage}.AWS_REGION}:${file(./serverless.env.yml):${opt:stage}.AWS_ACCOUNT_ID}:*"
+  ImageProcessingQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ImageProcessingQ
+      RedrivePolicy:
+        deadLetterTargetArn:
+            Fn::GetAtt:
+              - ImageProcessingDeadLetterQ
+              - Arn
+        maxReceiveCount: 1
+  ImageProcessingDeadLetterQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ImageProcessingDeadLetterQ
+  ImageProcessingQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    DependsOn : ImageProcessingQ
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: SQS:*
+            Resource: "*"
+            Condition:
+              ArnLike:
+                aws:SourceArn: arn:aws:s3:::${file(./serverless.env.yml):${opt:stage}.BUCKET_NAME}
+      Queues:
+        - !Ref ImageProcessingQ

@@ -1,0 +1,14 @@
+{
+  "name": "sls_playground",
+  "version": "1.0.0",
+  "description": "",
+  "main": "serverless.yml",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Sac <itssach.in>",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.927.0"
+  }
+}
