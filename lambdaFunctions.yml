@@ -19,7 +19,8 @@ receiveFromSQS:
   reservedConcurrency: 1
   events:
     - sqs:
-        batchSize: 1
+        batchSize: 10
+        maximumBatchingWindow: 30
         arn:
           Fn::GetAtt:
             - ImageProcessingQ
